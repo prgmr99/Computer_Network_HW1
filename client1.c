@@ -10,8 +10,7 @@
 #include <stdbool.h>
 
 #define BUF_SIZE 1024
-#define SERVER_IP 0xC0A801CB
-#define PORT_NUM 12457
+#define FILE_SERVER "./test_server"//file path
 
 static pthread_t thr;
 static int thr_id;
@@ -46,21 +45,14 @@ void *thread_recv(void *arg) {
 	pthread_exit((void*)0);
 }
 
-int main(int argc, char *argv[]) {
+int main(void) {
 	struct sockaddr_in client_addr;
-	char *IP = SERVER_IP;
-	in_port_t PORT = PORT_NUM;
 	char chat_data[BUF_SIZE];
 	
-	/*if(argc != 3) {
-		printf("Usage: ./filename [IP] [PORT] \n");
-		exit(0);
-	}*/
-	
 	client_fd = socket(PF_INET, SOCK_STREAM,0);
-	client_addr.sin_addr.s_addr = htonl(IP);
-	client_addr.sin_family = AF_INET;
-	client_addr.sin_port = htons(PORT);
+	client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	client_addr.sin_family = PF_INET;
+	client_addr.sin_port = htons(atoi("8080"));
 
 	if(connect(client_fd, (struct sockaddr *)&client_addr, sizeof(client_addr)) == -1) {
 		printf("Can't connect.\n");

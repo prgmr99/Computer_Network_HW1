@@ -8,9 +8,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#include <sys/un.h>
 
 #define BUF_SIZE 1024
-
+#define SOCKET_PATH "/tmp/mysocket2"
 
 static pthread_t thr;
 static int thr_id;
@@ -45,21 +46,13 @@ void *thread_recv(void *arg) {
 	pthread_exit((void*)0);
 }
 
-int main(int argc, char *argv[]) {
-	struct sockaddr_in client_addr;
-	char *IP = argv[1];
-	in_port_t PORT = atoi(argv[2]);
+int main(void) {
+	struct sockaddr_un client_addr;
 	char chat_data[BUF_SIZE];
 	
-	if(argc != 3) {
-		printf("Usage: ./filename [IP] [PORT] \n");
-		exit(0);
-	}
-	
-	client_fd = socket(PF_UNIX, SOCK_STREAM,0);
-	client_addr.sin_addr.s_addr = inet_addr(IP);
-	client_addr.sin_family = AF_UNIX;
-	client_addr.sin_port = htons(PORT);
+	client_fd = socket(AF_UNIX, SOCK_STREAM,0);
+    strcpy(client_addr.sun_path, SOCKET_PATH);
+	client_addr.sun_family = AF_UNIX;
 
 	if(connect(client_fd, (struct sockaddr *)&client_addr, sizeof(client_addr)) == -1) {
 		printf("Can't connect.\n");

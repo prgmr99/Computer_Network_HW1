@@ -10,15 +10,17 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <sys/un.h>
 
-#define BUF_LEN 1024
-#define PORT_NUM 12457
+#define BUF_LEN 20
+#define SOCKET_PATH "/tmp/mysocket"
 
 static pthread_t thr;
 static bool thr_exit = true;
 static int thr_id;
 static void *treturn;
-static struct sockaddr_in server_addr, client_addr;
+struct sockaddr_un server_addr;
+struct sockaddr_un client_addr;
 static int server_fd, client_fd, n, n2;
 static char recv_data[BUF_LEN];
 
@@ -37,13 +39,13 @@ void thread_stop() {
 void *thread_recv(void *arg) {
 	while(!thr_exit) {
 		if((n = recv(client_fd, recv_data, sizeof(recv_data),0)) == -1) {
-			printf("[클라이언트: %s(%d)] disconnected.\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+			//printf("[클라이언트: %s(%d)] disconnected.\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 			thread_stop();
 			close(client_fd);
 		}
 		else if(n > 0) {
 			recv_data[n] = '\0';
-			printf("\n[클라이언트: %s(%d)]: %s\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), recv_data);
+			//printf("\n[클라이언트: %s(%d)]: %s\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), recv_data);
 		}
 		pthread_exit((void *)0);
 	}
@@ -54,20 +56,21 @@ int main(int argc, char *argv[]) {
 	char temp[20];
 	int len;
 	
-	/*if(argc != 2) {
-		printf("Usage: ./filename [PORT] \n");
-		exit(0);
-	}*/
+	// if(argc != 2) {
+	// 	printf("Usage: ./filename [PORT] \n");
+	// 	exit(0);
+	// }
 	
-	if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+	if((server_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		printf("Server: can not Open Socket\n");
 		exit(0);
 	}
 	
 	memset(&server_addr, 0x00, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_addr.sin_port = htons(PORT_NUM);
+	server_addr.sun_family = AF_UNIX;
+	// server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	strcpy(server_addr.sun_path, SOCKET_PATH);
+	// server_addr.sin_port = htons(atoi(argv[1]));
 	
 	if(bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
 		printf("Server: Can't bind local address.\n");
@@ -82,7 +85,7 @@ int main(int argc, char *argv[]) {
 	
 	memset(recv_data, 0x00, sizeof(recv_data));
 	len = sizeof(client_addr);
-	printf("=====[PORT] : %d =====\n", PORT_NUM);
+	printf("=====[PORT] : %s =====\n", "TEMP");
 	printf("Server: waiting connection request.\n");
 
 	while(1) {
@@ -92,9 +95,9 @@ int main(int argc, char *argv[]) {
 			exit(0);
 		}
 		
-		inet_ntop(AF_INET, &client_addr.sin_addr.s_addr,temp,sizeof(temp));
+		inet_ntop(AF_UNIX, &client_addr.sun_path,temp,sizeof(temp));
 		printf("Server: %s client connect. \n", temp);
-		printf("\n%s(%d)님이 들어오셨습니다. 나가려면 (quit)을 누르세요.\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+		// printf("\n%s(%d)님이 들어오셨습니다. 나가려면 (quit)을 누르세요.\n", inet_ntoa(client_addr.sun_addr), ntohs(client_addr.sun_port));
 		
 		while(1) {
 			thread_start();
